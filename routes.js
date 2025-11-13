@@ -60,13 +60,22 @@ router.post('/purchase', async (req, res) => {
 
   //Validate input
 
+  const totalPrice = purchase.TotalPrice || (purchase.Quantity * purchase.PricePerTicket)
+
   //Get a one sport object from the database
   await sql.connect(db_connection_string);
 
   const result = await sql.query`INSERT INTO [dbo].[Purchase]
-  (BuyerName, BuyerEmail, SporDate, SportId)
-  VALUES
-  (${purchase.PurchaseId}, ${purchase.Quantity}, ${purchase.TotalPrice}, ${purchase.PricePerTicket},  ${purchase.BuyerName}, ${purchase.BuyerEmail}, ${purchase.PurchaseDate}, ${purchase.SportDate}, ${purchase.SportId})`;
+        (Quantity, TotalPrice, PricePerTicket, BuyerName, BuyerEmail, PurchaseDate, SportId)
+      VALUES
+        (${purchase.Quantity},
+         ${totalPrice},
+         ${purchase.PricePerTicket},
+         ${purchase.BuyerName},
+         ${purchase.BuyerEmail},
+         ${purchase.PurchaseDate || new Date()},
+         ${purchase.SportId});
+    ;`;
 
   if(result.rowsAffected[0] === 0) {
     return res.status(500).json({error: "Failed to insert comment."})
