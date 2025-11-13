@@ -54,7 +54,7 @@ if(result.recordset.length == 0) {
   res.json(result.recordset);
 });
 
-// POST: /api/sports/comment
+// POST: /api/sports/purchase
 router.post('/purchase', async (req, res) => {
   const purchase = req.body;
 
@@ -66,7 +66,7 @@ router.post('/purchase', async (req, res) => {
   const result = await sql.query`INSERT INTO [dbo].[Purchase]
   (BuyerName, BuyerEmail, SporDate, SportId)
   VALUES
-  (${purchase.BuyerName}, ${purchase.BuyerEmail}, ${purchase.SportDate}, ${purchase.SportId})`;
+  (${purchase.PurchaseId}, ${purchase.Quantity}, ${purchase.TotalPrice}, ${purchase.PricePerTicket},  ${purchase.BuyerName}, ${purchase.BuyerEmail}, ${purchase.PurchaseDate}, ${purchase.SportDate}, ${purchase.SportId})`;
 
   if(result.rowsAffected[0] === 0) {
     return res.status(500).json({error: "Failed to insert comment."})
