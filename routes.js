@@ -56,32 +56,39 @@ if(result.recordset.length == 0) {
 
 // POST: /api/sports/purchase
 router.post('/purchase', async (req, res) => {
+  console.log("RAW BODY:", req.body);
   const purchase = req.body;
+
+  if (!purchase) {
+    return res.status(400).send("No body received!");
+  }
+
 
   //Validate input
 
-  const totalPrice = purchase.TotalPrice || (purchase.Quantity * purchase.PricePerTicket)
+  const totalPrice = purchase.Quantity * purchase.PricePerTicket;
+  const purchaseDate = new Date().toISOString();
 
   //Get a one sport object from the database
   await sql.connect(db_connection_string);
 
   const result = await sql.query`INSERT INTO [dbo].[Purchase]
-        (Quantity, TotalPrice, PricePerTicket, BuyerName, BuyerEmail, PurchaseDate, SportId)
+        (Quantity, TotalPrice, PricePerTicket, BuyerName, BuyerEmail, purchaseDate, SportId)
       VALUES
         (${purchase.Quantity},
          ${totalPrice},
          ${purchase.PricePerTicket},
          ${purchase.BuyerName},
          ${purchase.BuyerEmail},
-         ${purchase.PurchaseDate || new Date()},
+         ${purchaseDate},
          ${purchase.SportId});
     ;`;
 
   if(result.rowsAffected[0] === 0) {
-    return res.status(500).json({error: "Failed to insert comment."})
+    return res.status(500).json({error: "Failed to insert purchase."})
   }
   else {
-    res.send('Comment inserted into db.')
+    res.send('Purchase inserted into db.')
   }
 
 });
