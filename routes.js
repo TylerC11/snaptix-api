@@ -24,33 +24,14 @@ ORDER BY a.[SportDate] DESC`;
   res.json(result.recordset);
 });
 
-//GET /api/sports/1
-router.get('/:id', async (req, res) => {
-    const id = req.params.id;
 
-    if(isNaN(id)){
-      return res.status(400).json({error: "Invalid sport ID. It must be a number."})
-    }
+// GET: /api/sports/purchase — get all purchases
+router.get('/purchase', async (req, res) => {
+  await sql.connect(db_connection_string);
 
-    //Get a collection of sport objects from the database
-    await sql.connect(db_connection_string)
+  const result = await sql.query`SELECT * FROM [dbo].[Purchase] ORDER BY PurchaseDate DESC`;
 
-    const result = await sql.query`SELECT a.[Title] as SportTitle, a.[Description], a.[Location], a.[SportDate], a.[PhotoPath],c.[OwnerId], c.[Name] as OwnerName, b.[CategoryId], b.[Name] as CategoryName
-FROM [dbo].[Sport] a
-INNER JOIN [dbo].[Category] b
-ON a.[CategoryId] = b.[CategoryId]
-INNER JOIN [dbo].[Owner] c
-ON a.[OwnerId] = c.[OwnerId]
-    WHERE a.[SportId] = ${id}`;
-
-if(result.recordset.length == 0) {
-  //sport not found
-  return res.status(404).json({ error:
-    "Listing not found"
-  });
-}
-
-  //return the result recordset as a JSON
+  // Return as JSON
   res.json(result.recordset);
 });
 
@@ -73,7 +54,7 @@ router.post('/purchase', async (req, res) => {
   await sql.connect(db_connection_string);
 
   const result = await sql.query`INSERT INTO [dbo].[Purchase]
-        (Quantity, TotalPrice, PricePerTicket, BuyerName, BuyerEmail, purchaseDate, SportId)
+        (Quantity, TotalPrice, PricePerTicket, BuyerName, BuyerEmail, PurchaseDate, SportId)
       VALUES
         (${purchase.Quantity},
          ${totalPrice},
@@ -91,6 +72,36 @@ router.post('/purchase', async (req, res) => {
     res.send('Purchase inserted into db.')
   }
 
+});
+
+//GET /api/sports/1
+router.get('/:id', async (req, res) => {
+    const id = req.params.id;
+
+    if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid sport ID. It must be a number." });
+  }
+
+    //Get a collection of sport objects from the database
+    await sql.connect(db_connection_string)
+
+    const result = await sql.query`SELECT a.[Title] as SportTitle, a.[Description], a.[Location], a.[SportDate], a.[PhotoPath],c.[OwnerId], c.[Name] as OwnerName, b.[CategoryId], b.[Name] as CategoryName
+FROM [dbo].[Sport] a
+INNER JOIN [dbo].[Category] b
+ON a.[CategoryId] = b.[CategoryId]
+INNER JOIN [dbo].[Owner] c
+ON a.[OwnerId] = c.[OwnerId]
+    WHERE a.[SportId] = ${id}`;
+
+if(result.recordset.length == 0) {
+  //sport not found
+  return res.status(404).json({ error:
+    "Listing not found"
+  });
+}
+
+  //return the result recordset as a JSON
+  res.json(result.recordset);
 });
 
 export default router;
