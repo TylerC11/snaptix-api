@@ -36,14 +36,14 @@ router.get('/purchase', async (req, res) => {
 });
 
 // POST: /api/sports/purchase
+// POST: /api/sports/purchase
 router.post('/purchase', async (req, res) => {
-    const purchase = req.body;
+  const purchase = req.body;
   console.log("RAW BODY:", req.body);
 
   if (!purchase) {
     return res.status(400).send("No body received!");
   }
-
 
   // Validation
   const errors = [];
@@ -71,6 +71,23 @@ router.post('/purchase', async (req, res) => {
     errors.push("SportId must be a valid number.");
   }
 
+  // Card validation - EXACT digit requirements
+  if (!purchase.CardNumber || !/^\d{16}$/.test(purchase.CardNumber.replace(/\s/g, ''))) {
+    errors.push("CardNumber must be exactly 16 digits.");
+  }
+
+  if (!purchase.CardHolderName || purchase.CardHolderName.trim().length < 2) {
+    errors.push("CardHolderName is required and must be at least 2 characters.");
+  }
+
+  if (!purchase.ExpiryDate || !/^\d{4}$/.test(purchase.ExpiryDate)) {
+    errors.push("ExpiryDate must be exactly 4 digits (MMYY format).");
+  }
+
+  if (!purchase.CVV || !/^\d{3}$/.test(purchase.CVV)) {
+    errors.push("CVV must be exactly 3 digits.");
+  }
+
   // If any validation errors occurred:
   if (errors.length > 0) {
     return res.status(400).json({ errors });
@@ -79,11 +96,11 @@ router.post('/purchase', async (req, res) => {
   const totalPrice = purchase.Quantity * purchase.PricePerTicket;
   const purchaseDate = new Date().toISOString();
 
-  //Get a one sport object from the database
+  // Connect to database
   await sql.connect(db_connection_string);
 
   const result = await sql.query`INSERT INTO [dbo].[Purchase]
-        (Quantity, TotalPrice, PricePerTicket, BuyerName, BuyerEmail, PurchaseDate, SportId)
+        (Quantity, TotalPrice, PricePerTicket, BuyerName, BuyerEmail, PurchaseDate, SportId, CardNumber, CardHolderName, ExpiryDate, CVV)
       VALUES
         (${purchase.Quantity},
          ${totalPrice},
@@ -91,7 +108,11 @@ router.post('/purchase', async (req, res) => {
          ${purchase.BuyerName},
          ${purchase.BuyerEmail},
          ${purchaseDate},
-         ${purchase.SportId});
+         ${purchase.SportId},
+         ${purchase.CardNumber},
+         ${purchase.CardHolderName},
+         ${purchase.ExpiryDate},
+         ${purchase.CVV});
     ;`;
 
   if(result.rowsAffected[0] === 0) {
@@ -100,7 +121,6 @@ router.post('/purchase', async (req, res) => {
   else {
     res.send('Purchase inserted into db.')
   }
-
 });
 
 //GET /api/sports/1
