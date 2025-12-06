@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
   //Get a collection of sport objects from the database
   await sql.connect(db_connection_string)
 
-  const result = await sql.query`SELECT a.[Title] as SportTitle, a.[Description], a.[Location], a.[SportDate], a.[PhotoPath],c.[OwnerId], c.[Name] as OwnerName, b.[CategoryId], b.[Name] as CategoryName
+  const result = await sql.query`SELECT a.[SportId], a.[Title] as SportTitle, a.[Description], a.[Location], a.[SportDate], a.[PhotoPath],c.[OwnerId], c.[Name] as OwnerName, b.[CategoryId], b.[Name] as CategoryName
 FROM [dbo].[Sport] a
 INNER JOIN [dbo].[Category] b
 ON a.[CategoryId] = b.[CategoryId]
@@ -37,15 +37,44 @@ router.get('/purchase', async (req, res) => {
 
 // POST: /api/sports/purchase
 router.post('/purchase', async (req, res) => {
+    const purchase = req.body;
   console.log("RAW BODY:", req.body);
-  const purchase = req.body;
 
   if (!purchase) {
     return res.status(400).send("No body received!");
   }
 
 
-  //Validate input
+  // Validation
+  const errors = [];
+
+  // Required numeric fields
+  if (purchase.Quantity == null || isNaN(purchase.Quantity) || purchase.Quantity <= 0) {
+    errors.push("Quantity must be a positive number.");
+  }
+
+  if (purchase.PricePerTicket == null || isNaN(purchase.PricePerTicket) || purchase.PricePerTicket <= 0) {
+    errors.push("PricePerTicket must be a positive number.");
+  }
+
+  // Required string fields
+  if (!purchase.BuyerName || purchase.BuyerName.trim().length < 2) {
+    errors.push("BuyerName is required and must be at least 2 characters.");
+  }
+
+  if (!purchase.BuyerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(purchase.BuyerEmail)) {
+    errors.push("BuyerEmail must be a valid email.");
+  }
+
+  // SportId numeric check
+  if (!purchase.SportId || isNaN(purchase.SportId)) {
+    errors.push("SportId must be a valid number.");
+  }
+
+  // If any validation errors occurred:
+  if (errors.length > 0) {
+    return res.status(400).json({ errors });
+  }
 
   const totalPrice = purchase.Quantity * purchase.PricePerTicket;
   const purchaseDate = new Date().toISOString();
@@ -85,7 +114,7 @@ router.get('/:id', async (req, res) => {
     //Get a collection of sport objects from the database
     await sql.connect(db_connection_string)
 
-    const result = await sql.query`SELECT a.[Title] as SportTitle, a.[Description], a.[Location], a.[SportDate], a.[PhotoPath],c.[OwnerId], c.[Name] as OwnerName, b.[CategoryId], b.[Name] as CategoryName
+    const result = await sql.query`SELECT a.[SportId], a.[Title] as SportTitle, a.[Description], a.[Location], a.[SportDate], a.[PhotoPath],c.[OwnerId], c.[Name] as OwnerName, b.[CategoryId], b.[Name] as CategoryName
 FROM [dbo].[Sport] a
 INNER JOIN [dbo].[Category] b
 ON a.[CategoryId] = b.[CategoryId]
